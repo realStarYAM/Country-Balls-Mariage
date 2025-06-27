@@ -41,9 +41,7 @@ const countries=[
   }
 ];
 
-const startBtn=document.getElementById('startBtn');
 const game=document.getElementById('game');
-const home=document.getElementById('home');
 const countrySelect=document.getElementById('country');
 const genderSelect=document.getElementById('gender');
 const createBtn=document.getElementById('createBtn');
@@ -55,11 +53,9 @@ const resultDiv=document.getElementById('result');
 const xpFill=document.getElementById('xpFill');
 const levelDiv=document.getElementById('level');
 let xp=0;
-
-startBtn.addEventListener('click',()=>{
-  home.classList.add('hidden');
-  game.classList.remove('hidden');
-});
+// XP settings for easy tweaking
+const XP_PER_LEVEL=50;
+const XP_GAIN=10;
 
 function flagEmoji(code){
   const base=0x1F1E6;
@@ -78,8 +74,8 @@ function randomFrom(arr){
 }
 
 function updateXP(){
-  xpFill.style.width=`${xp%100}%`;
-  levelDiv.textContent=`Niveau : ${Math.floor(xp/100)+1}`;
+  xpFill.style.width=`${(xp%XP_PER_LEVEL)/XP_PER_LEVEL*100}%`;
+  levelDiv.textContent=`Niveau : ${Math.floor(xp/XP_PER_LEVEL)+1}`;
 }
 
 function displayCharacter(el,p){
@@ -117,9 +113,9 @@ matchBtn.addEventListener('click',()=>{
   partnerDiv.appendChild(marryBtn);
   partnerDiv.classList.remove('hidden');
   marryBtn.onclick=()=>{
-    xp+=10;
+    xp+=XP_GAIN;
     updateXP();
-    resultDiv.textContent=`Mariage réussi avec ${partner.first} ${partner.last} (${partner.name}) ! +10 XP`;
+    resultDiv.textContent=`Mariage réussi avec ${partner.first} ${partner.last} (${partner.name}) ! +${XP_GAIN} XP`;
     partnerDiv.classList.add('hidden');
   };
 });
