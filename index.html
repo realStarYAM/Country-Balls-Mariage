@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Country Balls: Mariage</title>
+<style>
+  body{background:#121212;color:#eee;font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  header{padding:1rem;background:#1f1f1f;width:100%;text-align:center;font-size:2rem;color:#fff}
+  main{padding:1rem;width:100%;max-width:800px}
+  .card{background:#1e1e1e;border-radius:8px;padding:1rem;margin:0.5rem 0;display:flex;align-items:center;justify-content:space-between}
+  .flag{font-size:2rem;margin-right:1rem}
+  select,input,button{padding:0.5rem;border-radius:4px;border:none;margin:0.25rem 0}
+  button{background:#ff9800;color:#000;font-weight:bold;cursor:pointer}
+  button:hover{background:#ffa733}
+  #partner{display:none}
+  @media(max-width:600px){header{font-size:1.5rem}}
+</style>
+</head>
+<body>
+<header>Country Balls: Mariage</header>
+<main>
+<div>
+  <label>Pays :</label>
+  <select id="countrySelect"></select>
+  <label>Genre :</label>
+  <select id="genderSelect">
+    <option value="male">Homme</option>
+    <option value="female">Femme</option>
+  </select>
+  <div>
+    <label>Prénom :</label>
+    <input id="firstName" type="text">
+    <label>Nom :</label>
+    <input id="lastName" type="text">
+  </div>
+  <button id="findBtn">Chercher un partenaire</button>
+</div>
+<div id="partner" class="card">
+  <span class="flag" id="partnerFlag"></span>
+  <span id="partnerName"></span>
+  <button id="marryBtn">Se marier</button>
+</div>
+<div id="result"></div>
+<div>XP : <span id="xp">0</span></div>
+</main>
+<script>
+// convert ISO code to flag emoji
+function flagEmoji(code){
+  const base=0x1F1E6;return String.fromCodePoint(...code.toUpperCase().split('').map(c=>base+c.charCodeAt(0)-65))
+}
+
+const countries=[
+  {code:'AF',name:'Afghanistan',male:{first:'Ahmad',last:'Khan'},female:{first:'Fatima',last:'Durrani'}},
+  {code:'AL',name:'Albania',male:{first:'Arben',last:'Hoxha'},female:{first:'Elira',last:'Shehu'}},
+  {code:'DZ',name:'Algérie',male:{first:'Mohamed',last:'Brahimi'},female:{first:'Aicha',last:'Boukhalfa'}},
+  {code:'AD',name:'Andorre',male:{first:'Joan',last:'Casals'},female:{first:'Anna',last:'Borrell'}},
+  {code:'AO',name:'Angola',male:{first:'José',last:'Silva'},female:{first:'Maria',last:'Fernandes'}},
+  {code:'AG',name:'Antigua and Barbuda',male:{first:'Dwayne',last:'Joseph'},female:{first:'Shanelle',last:'Thomas'}},
+  {code:'AR',name:'Argentine',male:{first:'Carlos',last:'Gonzalez'},female:{first:'Maria',last:'Garcia'}},
+  {code:'AM',name:'Arménie',male:{first:'Armen',last:'Petrosyan'},female:{first:'Ani',last:'Sargsyan'}},
+  {code:'AU',name:'Australie',male:{first:'Jack',last:'Smith'},female:{first:'Olivia',last:'Brown'}},
+  {code:'AT',name:'Autriche',male:{first:'Lukas',last:'Müller'},female:{first:'Anna',last:'Huber'}},
+  {code:'AZ',name:'Azerbaïdjan',male:{first:'Ali',last:'Huseynov'},female:{first:'Leyla',last:'Aliyeva'}},
+  {code:'BS',name:'Bahamas',male:{first:'Lynden',last:'Rolle'},female:{first:'Kendra',last:'Smith'}},
+  {code:'BH',name:'Bahreïn',male:{first:'Hassan',last:'Al Khalifa'},female:{first:'Fatima',last:'Al Khalifa'}},
+  {code:'BD',name:'Bangladesh',male:{first:'Rahim',last:'Islam'},female:{first:'Ayesha',last:'Begum'}},
+  {code:'BB',name:'Barbade',male:{first:'David',last:'Haynes'},female:{first:'Ann',last:'Forde'}},
+  {code:'BY',name:'Biélorussie',male:{first:'Dmitry',last:'Kozlov'},female:{first:'Anna',last:'Ivanova'}},
+  {code:'BE',name:'Belgique',male:{first:'Jean',last:'Peeters'},female:{first:'Marie',last:'Dubois'}},
+  {code:'BZ',name:'Belize',male:{first:'Carlos',last:'Ramirez'},female:{first:'Elena',last:'Hernandez'}},
+  {code:'BJ',name:'Bénin',male:{first:'Youssouf',last:'Adekambi'},female:{first:'Safi',last:'Adjovi'}},
+  {code:'BT',name:'Bhoutan',male:{first:'Tenzin',last:'Wangchuk'},female:{first:'Pema',last:'Choden'}},
+  {code:'BO',name:'Bolivie',male:{first:'Juan',last:'Quispe'},female:{first:'Maria',last:'Condori'}},
+  {code:'BA',name:'Bosnie-Herzégovine',male:{first:'Emir',last:'Hadžić'},female:{first:'Aida',last:'Kovač'}},
+  {code:'BW',name:'Botswana',male:{first:'Thabo',last:'Dlamini'},female:{first:'Naledi',last:'Kgosi'}},
+  {code:'BR',name:'Brésil',male:{first:'João',last:'Silva'},female:{first:'Ana',last:'Santos'}},
+  {code:'BN',name:'Brunei',male:{first:'Haji',last:'Omar'},female:{first:'Nur',last:'Khalid'}},
+  {code:'BG',name:'Bulgarie',male:{first:'Ivan',last:'Petrov'},female:{first:'Maria',last:'Georgieva'}},
+  {code:'BF',name:'Burkina Faso',male:{first:'Issa',last:'Traoré'},female:{first:'Awa',last:'Ouédraogo'}},
+  {code:'BI',name:'Burundi',male:{first:'Pierre',last:'Niyonzima'},female:{first:'Aline',last:'Niyonkuru'}},
+  {code:'KH',name:'Cambodge',male:{first:'Sok',last:'Chan'},female:{first:'Sreymom',last:'Ly'}},
+  {code:'CM',name:'Cameroun',male:{first:'Samuel',last:'Ngono'},female:{first:'Esther',last:'Nguefack'}},
+  {code:'CA',name:'Canada',male:{first:'Michael',last:'Smith'},female:{first:'Emily',last:'Johnson'}},
+  {code:'CV',name:'Cap-Vert',male:{first:'Adilson',last:'Fernandes'},female:{first:'Carla',last:'Monteiro'}},
+  {code:'CF',name:'République centrafricaine',male:{first:'Benoît',last:'Dacko'},female:{first:'Solange',last:'Touadéra'}},
+  {code:'TD',name:'Tchad',male:{first:'Mahamat',last:'Idriss'},female:{first:'Amina',last:'Abakar'}},
+  {code:'CL',name:'Chili',male:{first:'Diego',last:'Muñoz'},female:{first:'Camila',last:'Rojas'}},
+  {code:'CN',name:'Chine',male:{first:'Wei',last:'Li'},female:{first:'Ling',last:'Wang'}},
+  {code:'CO',name:'Colombie',male:{first:'Carlos',last:'Lopez'},female:{first:'Luisa',last:'Gomez'}},
+  {code:'KM',name:'Comores',male:{first:'Ali',last:'Abdallah'},female:{first:'Nadia',last:'Madi'}},
+  {code:'CG',name:'Congo',male:{first:'Jean',last:'Okemba'},female:{first:'Brigitte',last:'Gondolo'}},
+  {code:'CR',name:'Costa Rica',male:{first:'Jose',last:'Rodriguez'},female:{first:'Laura',last:'Lopez'}},
+  {code:'CI',name:"Côte d'Ivoire",male:{first:'Yao',last:'Kouassi'},female:{first:'Aya',last:'Traoré'}},
+  {code:'HR',name:'Croatie',male:{first:'Ivan',last:'Horvat'},female:{first:'Ana',last:'Kovačić'}},
+  {code:'CU',name:'Cuba',male:{first:'Ernesto',last:'Perez'},female:{first:'Claudia',last:'Gonzalez'}},
+  {code:'CY',name:'Chypre',male:{first:'Andreas',last:'Nicolaou'},female:{first:'Maria',last:'Georgiou'}},
+  {code:'CZ',name:'Tchéquie',male:{first:'Jan',last:'Novák'},female:{first:'Eva',last:'Svobodová'}},
+  {code:'CD',name:'RD Congo',male:{first:'Patrick',last:'Lumumba'},female:{first:'Chantal',last:'Kabila'}},
+  {code:'DK',name:'Danemark',male:{first:'Lars',last:'Jensen'},female:{first:'Freja',last:'Nielsen'}},
+  {code:'DJ',name:'Djibouti',male:{first:'Hassan',last:'Guelleh'},female:{first:'Faduma',last:'Yusuf'}},
+  {code:'DM',name:'Dominique',male:{first:'Johnson',last:'Charles'},female:{first:'Sharon',last:'James'}},
+  {code:'DO',name:'République dominicaine',male:{first:'Juan',last:'Ramirez'},female:{first:'Rosa',last:'Diaz'}},
+  {code:'EC',name:'Équateur',male:{first:'Luis',last:'Torres'},female:{first:'Sofia',last:'Vera'}},
+  {code:'EG',name:'Égypte',male:{first:'Omar',last:'Hassan'},female:{first:'Sara',last:'Mahmoud'}},
+  {code:'SV',name:'Salvador',male:{first:'Carlos',last:'Castillo'},female:{first:'Ana',last:'Guzman'}},
+  {code:'GQ',name:'Guinée équatoriale',male:{first:'Juan',last:'Obiang'},female:{first:'Maria',last:'Mba'}},
+  {code:'ER',name:'Érythrée',male:{first:'Samuel',last:'Tekle'},female:{first:'Hana',last:'Gebre'}},
+  {code:'EE',name:'Estonie',male:{first:'Mati',last:'Tamm'},female:{first:'Kadri',last:'Kask'}},
+  {code:'SZ',name:'Eswatini',male:{first:'Sibusiso',last:'Dlamini'},female:{first:'Nomcebo',last:'Nkosi'}},
+  {code:'ET',name:'Éthiopie',male:{first:'Abebe',last:'Bekele'},female:{first:'Liya',last:'Gebre'}},
+  {code:'FJ',name:'Fidji',male:{first:'Jone',last:'Koro'},female:{first:'Litia',last:'Buli'}},
+  {code:'FI',name:'Finlande',male:{first:'Mika',last:'Korhonen'},female:{first:'Emma',last:'Laine'}},
+  {code:'FR',name:'France',male:{first:'Jean',last:'Dupont'},female:{first:'Marie',last:'Martin'}},
+  {code:'GA',name:'Gabon',male:{first:'Pierre',last:'Mba'},female:{first:'Estelle',last:'Nguema'}},
+  {code:'GM',name:'Gambie',male:{first:'Lamin',last:'Jallow'},female:{first:'Isatou',last:'Touray'}},
+  {code:'GE',name:'Géorgie',male:{first:'Giorgi',last:'Beridze'},female:{first:'Nino',last:'Gelashvili'}},
+  {code:'DE',name:'Allemagne',male:{first:'Lukas',last:'Schmidt'},female:{first:'Laura',last:'Meyer'}},
+  {code:'GH',name:'Ghana',male:{first:'Kwame',last:'Boateng'},female:{first:'Akosua',last:'Mensah'}},
+  {code:'GR',name:'Grèce',male:{first:'Giorgos',last:'Papadopoulos'},female:{first:'Eleni',last:'Nikolaou'}},
+  {code:'GD',name:'Grenade',male:{first:'Marcus',last:'Benjamin'},female:{first:'Keisha',last:'Francis'}},
+  {code:'GT',name:'Guatemala',male:{first:'Pedro',last:'Cruz'},female:{first:'Ana',last:'Morales'}},
+  {code:'GN',name:'Guinée',male:{first:'Mamadou',last:'Diallo'},female:{first:'Aicha',last:'Bah'}},
+  {code:'GW',name:'Guinée-Bissau',male:{first:'Domingos',last:'Viera'},female:{first:'Nancy',last:'Cissé'}},
+  {code:'GY',name:'Guyana',male:{first:'Aubrey',last:'Smith'},female:{first:'Natasha',last:'Persaud'}},
+  {code:'HT',name:'Haïti',male:{first:'Jean',last:'Pierre'},female:{first:'Marie',last:'Joseph'}},
+  {code:'HN',name:'Honduras',male:{first:'Juan',last:'Hernandez'},female:{first:'Ana',last:'Mejia'}},
+  {code:'HU',name:'Hongrie',male:{first:'Bence',last:'Nagy'},female:{first:'Anna',last:'Kovacs'}},
+  {code:'IS',name:'Islande',male:{first:'Aron',last:'Guðmundsson'},female:{first:'Sara',last:'Jónsdóttir'}},
+  {code:'IN',name:'Inde',male:{first:'Arjun',last:'Kumar'},female:{first:'Priya',last:'Singh'}},
+  {code:'ID',name:'Indonésie',male:{first:'Agus',last:'Wijaya'},female:{first:'Siti',last:'Putri'}},
+  {code:'IR',name:'Iran',male:{first:'Ali',last:'Rezaei'},female:{first:'Zahra',last:'Ahmadi'}},
+  {code:'IQ',name:'Irak',male:{first:'Hassan',last:'Ali'},female:{first:'Rana',last:'Hussein'}},
+  {code:'IE',name:'Irlande',male:{first:'Sean',last:'O\'Connor'},female:{first:'Aoife',last:'Murphy'}},
+  {code:'IL',name:'Israël',male:{first:'Daniel',last:'Levi'},female:{first:'Yael',last:'Cohen'}},
+  {code:'IT',name:'Italie',male:{first:'Luca',last:'Rossi'},female:{first:'Giulia',last:'Bianchi'}},
+  {code:'JM',name:'Jamaïque',male:{first:'Dwayne',last:'Brown'},female:{first:'Tanya',last:'Grant'}},
+  {code:'JP',name:'Japon',male:{first:'Haruto',last:'Sato'},female:{first:'Yui',last:'Suzuki'}},
+  {code:'JO',name:'Jordanie',male:{first:'Omar',last:'Haddad'},female:{first:'Lina',last:'Khoury'}},
+  {code:'KZ',name:'Kazakhstan',male:{first:'Nursultan',last:'Aman'},female:{first:'Aigerim',last:'Nazar'}},
+  {code:'KE',name:'Kenya',male:{first:'John',last:'Ochieng'},female:{first:'Grace',last:'Achieng'}},
+  {code:'KI',name:'Kiribati',male:{first:'Beniamina',last:'Tabai'},female:{first:'Tekoaua',last:'Timeon'}},
+  {code:'KW',name:'Koweït',male:{first:'Abdullah',last:'Al Sabah'},female:{first:'Maha',last:'Al Sabah'}},
+  {code:'KG',name:'Kirghizistan',male:{first:'Bakyt',last:'Uulu'},female:{first:'Aizada',last:'Dzhusupova'}},
+  {code:'LA',name:'Laos',male:{first:'Somchai',last:'Phanthavong'},female:{first:'Kham',last:'Sengsavanh'}},
+  {code:'LV',name:'Lettonie',male:{first:'Arturs',last:'Ozols'},female:{first:'Liga',last:'Berzina'}},
+  {code:'LB',name:'Liban',male:{first:'Jad',last:'Khoury'},female:{first:'Maya',last:'Haddad'}},
+  {code:'LS',name:'Lesotho',male:{first:'Thabo',last:'Mokhothu'},female:{first:'Lerato',last:'Mokhethi'}},
+  {code:'LR',name:'Libéria',male:{first:'Samuel',last:'Johnson'},female:{first:'Grace',last:'Doe'}},
+  {code:'LY',name:'Libye',male:{first:'Omar',last:'Gaddafi'},female:{first:'Aisha',last:'El-Megaryaf'}},
+  {code:'LI',name:'Liechtenstein',male:{first:'Lukas',last:'Büchel'},female:{first:'Julia',last:'Kaiser'}},
+  {code:'LT',name:'Lituanie',male:{first:'Mantas',last:'Kazlauskas'},female:{first:'Ieva',last:'Jankauskaite'}},
+  {code:'LU',name:'Luxembourg',male:{first:'Tom',last:'Schmit'},female:{first:'Claire',last:'Klein'}},
+  {code:'MG',name:'Madagascar',male:{first:'Jean',last:'Rakoto'},female:{first:'Fara',last:'Rasoanaivo'}},
+  {code:'MW',name:'Malawi',male:{first:'Chikondi',last:'Phiri'},female:{first:'Thandiwe',last:'Nkhoma'}},
+  {code:'MY',name:'Malaisie',male:{first:'Ahmad',last:'Hassan'},female:{first:'Nur',last:'Aisyah'}},
+  {code:'MV',name:'Maldives',male:{first:'Ibrahim',last:'Didi'},female:{first:'Aminath',last:'Ali'}},
+  {code:'ML',name:'Mali',male:{first:'Moussa',last:'Traoré'},female:{first:'Fatou',last:'Coulibaly'}},
+  {code:'MT',name:'Malte',male:{first:'Joseph',last:'Camilleri'},female:{first:'Emma',last:'Vella'}},
+  {code:'MH',name:'Îles Marshall',male:{first:'Anjo',last:'Kabua'},female:{first:'Lani',last:'Heine'}},
+  {code:'MR',name:'Mauritanie',male:{first:'Mohamed',last:'Dahi'},female:{first:'Mariam',last:'Mint'}},
+  {code:'MU',name:'Maurice',male:{first:'Raj',last:'Beekhoo'},female:{first:'Anita',last:'Ramphul'}},
+  {code:'MX',name:'Mexique',male:{first:'Juan',last:'Hernandez'},female:{first:'Guadalupe',last:'Ramirez'}},
+  {code:'FM',name:'Micronésie',male:{first:'Kens',last:'Mori'},female:{first:'Emi',last:'Suda'}},
+  {code:'MD',name:'Moldavie',male:{first:'Ion',last:'Rusu'},female:{first:'Elena',last:'Popa'}},
+  {code:'MC',name:'Monaco',male:{first:'Louis',last:'Grimaldi'},female:{first:'Charlotte',last:'Ducret'}},
+  {code:'MN',name:'Mongolie',male:{first:'Bat',last:'Erdene'},female:{first:'Sarnai',last:'Bold'}},
+  {code:'ME',name:'Monténégro',male:{first:'Marko',last:'Jovanović'},female:{first:'Milena',last:'Nikolić'}},
+  {code:'MA',name:'Maroc',male:{first:'Youssef',last:'El Fassi'},female:{first:'Fatima',last:'Bensouda'}},
+  {code:'MZ',name:'Mozambique',male:{first:'José',last:'Matos'},female:{first:'Ana',last:'Chissano'}},
+  {code:'MM',name:'Myanmar',male:{first:'Aung',last:'Zaw'},female:{first:'Mya',last:'Thazin'}},
+  {code:'NA',name:'Namibie',male:{first:'Petrus',last:'Shikongo'},female:{first:'Elina',last:'Nambala'}},
+  {code:'NR',name:'Nauru',male:{first:'René',last:'Harris'},female:{first:'Ruby',last:'Detudamo'}},
+  {code:'NP',name:'Népal',male:{first:'Suman',last:'Gurung'},female:{first:'Mira',last:'Thapa'}},
+  {code:'NL',name:'Pays-Bas',male:{first:'Jan',last:'de Vries'},female:{first:'Sanne',last:'Janssen'}},
+  {code:'NZ',name:'Nouvelle-Zélande',male:{first:'Liam',last:'Williams'},female:{first:'Sophie',last:'Smith'}},
+  {code:'NI',name:'Nicaragua',male:{first:'Carlos',last:'Ruiz'},female:{first:'Maria',last:'Sanchez'}},
+  {code:'NE',name:'Niger',male:{first:'Issoufou',last:'Garba'},female:{first:'Aïchatou',last:'Maïga'}},
+  {code:'NG',name:'Nigéria',male:{first:'Emeka',last:'Okafor'},female:{first:'Ngozi',last:'Adekunle'}},
+  {code:'KP',name:'Corée du Nord',male:{first:'Hyun',last:'Pak'},female:{first:'Soo',last:'Kim'}},
+  {code:'MK',name:'Macédoine du Nord',male:{first:'Aleksandar',last:'Trajkovski'},female:{first:'Elena',last:'Nikolova'}},
+  {code:'NO',name:'Norvège',male:{first:'Oliver',last:'Hansen'},female:{first:'Nora',last:'Larsen'}},
+  {code:'OM',name:'Oman',male:{first:'Said',last:'Al Said'},female:{first:'Aisha',last:'Al Said'}},
+  {code:'PK',name:'Pakistan',male:{first:'Ali',last:'Khan'},female:{first:'Ayesha',last:'Bibi'}},
+  {code:'PW',name:'Palaos',male:{first:'Victor',last:'Ueki'},female:{first:'Elsie',last:'Tellei'}},
+  {code:'PA',name:'Panama',male:{first:'Luis',last:'Moreno'},female:{first:'Catalina',last:'Diaz'}},
+  {code:'PG',name:'Papouasie-Nouvelle-Guinée',male:{first:'John',last:'Kundiawa'},female:{first:'Maria',last:'Mendi'}},
+  {code:'PY',name:'Paraguay',male:{first:'Miguel',last:'Gomez'},female:{first:'Rosa',last:'Benitez'}},
+  {code:'PE',name:'Pérou',male:{first:'Carlos',last:'Quispe'},female:{first:'Lucia',last:'Flores'}},
+  {code:'PH',name:'Philippines',male:{first:'Jose',last:'Santos'},female:{first:'Maria',last:'Cruz'}},
+  {code:'PL',name:'Pologne',male:{first:'Jakub',last:'Kowalski'},female:{first:'Anna',last:'Nowak'}},
+  {code:'PT',name:'Portugal',male:{first:'Tiago',last:'Silva'},female:{first:'Inês',last:'Santos'}},
+  {code:'QA',name:'Qatar',male:{first:'Hamad',last:'Al Thani'},female:{first:'Noora',last:'Al Thani'}},
+  {code:'RO',name:'Roumanie',male:{first:'Andrei',last:'Popescu'},female:{first:'Ioana',last:'Stan'}},
+  {code:'RU',name:'Russie',male:{first:'Ivan',last:'Ivanov'},female:{first:'Olga',last:'Petrova'}},
+  {code:'RW',name:'Rwanda',male:{first:'Jean',last:'Bizimana'},female:{first:'Aline',last:'Mukamana'}},
+  {code:'KN',name:'Saint-Christophe-et-Niévès',male:{first:'Dwayne',last:'Charles'},female:{first:'Janice',last:'Maynard'}},
+  {code:'LC',name:'Sainte-Lucie',male:{first:'Julian',last:'Joseph'},female:{first:'Amanda',last:'Charles'}},
+  {code:'VC',name:'Saint-Vincent-et-les-Grenadines',male:{first:'Andre',last:'Browne'},female:{first:'Sharon',last:'John'}},
+  {code:'WS',name:'Samoa',male:{first:'Tuilaepa',last:'Malielegaoi'},female:{first:'Fia',last:'Fao'}},
+  {code:'SM',name:'Saint-Marin',male:{first:'Lorenzo',last:'Guidi'},female:{first:'Giulia',last:'Berti'}},
+  {code:'ST',name:'Sao Tomé-et-Principe',male:{first:'José',last:'Costa'},female:{first:'Maria',last:'Fonseca'}},
+  {code:'SA',name:'Arabie saoudite',male:{first:'Faisal',last:'Al Saud'},female:{first:'Latifa',last:'Al Saud'}},
+  {code:'SN',name:'Sénégal',male:{first:'Mamadou',last:'Diop'},female:{first:'Awa',last:'Ndiaye'}},
+  {code:'RS',name:'Serbie',male:{first:'Nikola',last:'Jovanović'},female:{first:'Marija',last:'Marković'}},
+  {code:'SC',name:'Seychelles',male:{first:'Alain',last:'Lafortune'},female:{first:'Marie',last:'Belle'}},
+  {code:'SL',name:'Sierra Leone',male:{first:'Joseph',last:'Kamara'},female:{first:'Isatu',last:'Koroma'}},
+  {code:'SG',name:'Singapour',male:{first:'Wei',last:'Tan'},female:{first:'Li',last:'Lim'}},
+  {code:'SK',name:'Slovaquie',male:{first:'Peter',last:'Horváth'},female:{first:'Zuzana',last:'Kováčová'}},
+  {code:'SI',name:'Slovénie',male:{first:'Luka',last:'Kranjc'},female:{first:'Maja',last:'Novak'}},
+  {code:'SB',name:'Îles Salomon',male:{first:'John',last:'Maelaua'},female:{first:'Hilda',last:'Wate'}},
+  {code:'SO',name:'Somalie',male:{first:'Ahmed',last:'Yusuf'},female:{first:'Fatima',last:'Ali'}},
+  {code:'ZA',name:'Afrique du Sud',male:{first:'Thabo',last:'Mokoena'},female:{first:'Nandi',last:'Nkosi'}},
+  {code:'KR',name:'Corée du Sud',male:{first:'Min',last:'Park'},female:{first:'Ji',last:'Lee'}},
+  {code:'SS',name:'Soudan du Sud',male:{first:'James',last:'Deng'},female:{first:'Nyamal',last:'Kuol'}},
+  {code:'ES',name:'Espagne',male:{first:'Jose',last:'Garcia'},female:{first:'Lucia',last:'Martinez'}},
+  {code:'LK',name:'Sri Lanka',male:{first:'Kamal',last:'Perera'},female:{first:'Nadeesha',last:'Fernando'}},
+  {code:'SD',name:'Soudan',male:{first:'Omar',last:'Hassan'},female:{first:'Salma',last:'Mohamed'}},
+  {code:'SR',name:'Suriname',male:{first:'Ronny',last:'Bouterse'},female:{first:'Anoushka',last:'Gajadien'}},
+  {code:'SE',name:'Suède',male:{first:'Erik',last:'Johansson'},female:{first:'Linnéa',last:'Larsson'}},
+  {code:'CH',name:'Suisse',male:{first:'Luca',last:'Bernasconi'},female:{first:'Sophie',last:'Müller'}},
+  {code:'SY',name:'Syrie',male:{first:'Ahmed',last:'Habib'},female:{first:'Lina',last:'Nassar'}},
+  {code:'TW',name:'Taïwan',male:{first:'Chen',last:'Wang'},female:{first:'Mei',last:'Lin'}},
+  {code:'TJ',name:'Tadjikistan',male:{first:'Rustam',last:'Rahmon'},female:{first:'Dilbar',last:'Sharipova'}},
+  {code:'TZ',name:'Tanzanie',male:{first:'Juma',last:'Mwakalebela'},female:{first:'Asha',last:'Nyerere'}},
+  {code:'TH',name:'Thaïlande',male:{first:'Somchai',last:'Suk'},female:{first:'Suda',last:'Kanya'}},
+  {code:'TL',name:'Timor oriental',male:{first:'Xanana',last:'Gusmão'},female:{first:'Rosa',last:'Amaral'}},
+  {code:'TG',name:'Togo',male:{first:'Kossi',last:'Kodjo'},female:{first:'Ama',last:'Ayivi'}},
+  {code:'TO',name:'Tonga',male:{first:'Sione',last:'Mahe'},female:{first:'Mele',last:'Taufa'}},
+  {code:'TT',name:'Trinité-et-Tobago',male:{first:'Kevin',last:'Phillips'},female:{first:'Renee',last:'Persad'}},
+  {code:'TN',name:'Tunisie',male:{first:'Ahmed',last:'Ben Ali'},female:{first:'Leila',last:'Ben Youssef'}},
+  {code:'TR',name:'Turquie',male:{first:'Ahmet',last:'Yılmaz'},female:{first:'Ayşe',last:'Demir'}},
+  {code:'TM',name:'Turkménistan',male:{first:'Batyr',last:'Atayev'},female:{first:'Ayna',last:'Geldiyeva'}},
+  {code:'TV',name:'Tuvalu',male:{first:'Tau',last:'Paea'},female:{first:'Mila',last:'Kitiona'}},
+  {code:'UG',name:'Ouganda',male:{first:'Daniel',last:'Okello'},female:{first:'Grace',last:'Nabwire'}},
+  {code:'UA',name:'Ukraine',male:{first:'Oleh',last:'Shevchenko'},female:{first:'Olena',last:'Ivanova'}},
+  {code:'AE',name:'Émirats arabes unis',male:{first:'Saeed',last:'Al Nahyan'},female:{first:'Reem',last:'Al Maktoum'}},
+  {code:'GB',name:'Royaume-Uni',male:{first:'James',last:'Brown'},female:{first:'Emma',last:'Wilson'}},
+  {code:'US',name:'États-Unis',male:{first:'John',last:'Smith'},female:{first:'Emily',last:'Davis'}},
+  {code:'UY',name:'Uruguay',male:{first:'Diego',last:'Forlan'},female:{first:'Maria',last:'Rodriguez'}},
+  {code:'UZ',name:'Ouzbékistan',male:{first:'Aziz',last:'Karimov'},female:{first:'Dilnoza',last:'Tursunova'}},
+  {code:'VU',name:'Vanuatu',male:{first:'Kalmet',last:'Napat'},female:{first:'Mele',last:'Kalo'}},
+  {code:'VA',name:'Vatican',male:{first:'Francesco',last:'Rossi'},female:{first:'Maria',last:'Roma'}},
+  {code:'VE',name:'Venezuela',male:{first:'Carlos',last:'Perez'},female:{first:'Gabriela',last:'Rodriguez'}},
+  {code:'VN',name:'Viêt Nam',male:{first:'Anh',last:'Nguyen'},female:{first:'Lan',last:'Tran'}},
+  {code:'YE',name:'Yémen',male:{first:'Ali',last:'Saleh'},female:{first:'Amal',last:'Nasser'}},
+  {code:'ZM',name:'Zambie',male:{first:'Joseph',last:'Zulu'},female:{first:'Chipo',last:'Phiri'}},
+  {code:'ZW',name:'Zimbabwe',male:{first:'Tendai',last:'Chirwa'},female:{first:'Rutendo',last:'Moyo'}}
+];
+
+const countrySelect=document.getElementById('countrySelect');
+const genderSelect=document.getElementById('genderSelect');
+const firstNameInput=document.getElementById('firstName');
+const lastNameInput=document.getElementById('lastName');
+const findBtn=document.getElementById('findBtn');
+const partnerDiv=document.getElementById('partner');
+const partnerFlag=document.getElementById('partnerFlag');
+const partnerName=document.getElementById('partnerName');
+const marryBtn=document.getElementById('marryBtn');
+const resultDiv=document.getElementById('result');
+const xpSpan=document.getElementById('xp');
+let xp=0;
+
+countries.forEach(c=>{
+  const opt=document.createElement('option');
+  opt.value=c.code;opt.textContent=c.name;countrySelect.appendChild(opt);
+});
+
+function autofill(){
+  const c=countries.find(x=>x.code===countrySelect.value);
+  const g=genderSelect.value;
+  if(c){
+    firstNameInput.value=c[g].first;
+    lastNameInput.value=c[g].last;
+  }
+}
+countrySelect.onchange=autofill;
+genderSelect.onchange=autofill;
+
+autofill();
+
+findBtn.onclick=()=>{
+  const others=countries.filter(c=>c.code!==countrySelect.value);
+  const partner=others[Math.floor(Math.random()*others.length)];
+  const g=Math.random()>0.5?'male':'female';
+  partnerFlag.textContent=flagEmoji(partner.code);
+  partnerName.textContent=`${partner[g].first} ${partner[g].last} (${partner.name})`;
+  partnerDiv.style.display='flex';
+  partnerDiv.dataset.partner=JSON.stringify({country:partner.code,gender:g});
+}
+
+marryBtn.onclick=()=>{
+  const data=JSON.parse(partnerDiv.dataset.partner);
+  xp+=10; // gain fixe
+  xpSpan.textContent=xp;
+  resultDiv.textContent=`Mariage réussi avec ${partnerName.textContent}! +10 XP`;
+  partnerDiv.style.display='none';
+}
+</script>
+</body>
+</html>
