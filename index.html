@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Country Balls: Mariage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Country Balls: Mariage</h1></header>
+  <main id="home">
+    <button id="startBtn">Démarrer</button>
+  </main>
+  <section id="game" class="hidden">
+    <div id="selection" class="card">
+      <label for="country">Pays</label>
+      <select id="country"></select>
+      <label for="gender">Genre</label>
+      <select id="gender">
+        <option value="male">Homme</option>
+        <option value="female">Femme</option>
+      </select>
+      <button id="createBtn">Créer mon personnage</button>
+    </div>
+    <div id="character" class="card hidden"></div>
+    <div id="match" class="card hidden">
+      <button id="matchBtn">Matchmaking</button>
+    </div>
+    <div id="partner" class="card hidden"></div>
+    <div id="result"></div>
+    <div id="xpBar" class="xp"><div id="xpFill"></div></div>
+    <div id="level">Niveau : 1</div>
+  </section>
+  <script src="script.js"></script>
+</body>
+</html>
