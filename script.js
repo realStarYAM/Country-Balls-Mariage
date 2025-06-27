@@ -57,6 +57,18 @@ let xp=0;
 const XP_PER_LEVEL=50;
 const XP_GAIN=10;
 
+function pop(el){
+  el.classList.add('pop');
+  setTimeout(()=>el.classList.remove('pop'),300);
+}
+
+function showToast(msg){
+  resultDiv.textContent=msg;
+  resultDiv.classList.add('show');
+  pop(resultDiv);
+  setTimeout(()=>resultDiv.classList.remove('show'),2500);
+}
+
 function flagEmoji(code){
   const base=0x1F1E6;
   return String.fromCodePoint(...code.split('').map(c=>base+c.charCodeAt(0)-65));
@@ -82,6 +94,7 @@ function displayCharacter(el,p){
   el.innerHTML=`<div>${flagEmoji(p.code)}</div><div>${p.first} ${p.last}</div>`+
     `<div>${p.gender==='male'?'Homme':'Femme'} - ${p.origin}</div>`;
   el.classList.remove('hidden');
+  pop(el);
 }
 
 createBtn.addEventListener('click',()=>{
@@ -95,7 +108,7 @@ createBtn.addEventListener('click',()=>{
   characterDiv.dataset.player=JSON.stringify(player);
   matchDiv.classList.remove('hidden');
   partnerDiv.classList.add('hidden');
-  resultDiv.textContent='';
+  resultDiv.classList.remove('show');
 });
 
 matchBtn.addEventListener('click',()=>{
@@ -109,14 +122,15 @@ matchBtn.addEventListener('click',()=>{
   partnerDiv.innerHTML='';
   const marryBtn=document.createElement('button');
   marryBtn.textContent='Se marier';
+  marryBtn.classList.add('orange');
   displayCharacter(partnerDiv,partner);
   partnerDiv.appendChild(marryBtn);
   partnerDiv.classList.remove('hidden');
   marryBtn.onclick=()=>{
     xp+=XP_GAIN;
     updateXP();
-    resultDiv.textContent=`Mariage réussi avec ${partner.first} ${partner.last} (${partner.name}) ! +${XP_GAIN} XP`;
     partnerDiv.classList.add('hidden');
+    showToast(`Mariage réussi avec ${partner.first} ${partner.last} (${partner.name}) ! +${XP_GAIN} XP`);
   };
 });
 
